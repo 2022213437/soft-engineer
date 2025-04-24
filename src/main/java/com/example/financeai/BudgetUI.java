@@ -3,44 +3,56 @@ package com.example.financeai;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 
 public class BudgetUI extends Application {
-
-    private Scene mainScene;
 
     @Override
     public void start(Stage primaryStage) {
         primaryStage.setTitle("AI Finance Tracker - Budget");
 
+        Screen screen = Screen.getPrimary();
+        double screenWidth = screen.getVisualBounds().getWidth();
+        double screenHeight = screen.getVisualBounds().getHeight();
+
+        double windowWidth = screenWidth * 0.9;
+        double windowHeight = screenHeight * 0.9;
+
+        BorderPane root = createContent(primaryStage);
+
+        Scene scene = new Scene(root, windowWidth, windowHeight);
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+
+    public static BorderPane createContent(Stage stage) {
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color: #FFFFFF;");
 
-        HBox topSection = createTopSection(primaryStage);
+        HBox topSection = createTopSection(stage);
         root.setTop(topSection);
 
         VBox leftSection = createLeftContent();
         root.setLeft(leftSection);
+        leftSection.prefWidthProperty().bind(root.widthProperty().multiply(0.7));
 
         VBox rightSection = createRightSection();
         root.setRight(rightSection);
 
-        mainScene = new Scene(root, 1200, 700);
-        leftSection.prefWidthProperty().bind(mainScene.widthProperty().multiply(0.7));
-        primaryStage.setScene(mainScene);
-        primaryStage.show();
+        return root;
     }
 
-    private HBox createTopSection(Stage budgetStage) {
+    private static HBox createTopSection(Stage stage) {
         HBox topBox = new HBox(20);
         topBox.setAlignment(Pos.CENTER_LEFT);
         topBox.setPadding(new Insets(10, 20, 10, 20));
@@ -55,21 +67,30 @@ public class BudgetUI extends Application {
         searchField.setPromptText("Search...");
         searchField.setFont(Font.font("Candara", 14));
 
-        Button settingsButton = new Button("Settings");
+        Button settingsButton = new Button("Track");
         settingsButton.setFont(Font.font("Candara", FontWeight.BOLD, 14));
         settingsButton.setStyle("-fx-background-color: #689F38; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15 8 15;");
 
         settingsButton.setOnAction(event -> {
-            SettingsUI settingsUI = new SettingsUI();
-            Stage settingsStage = new Stage();
-            settingsUI.start(settingsStage);
+            Stage currentStage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+            currentStage.getScene().setRoot(TrackUI.createContent(currentStage));
         });
 
-        topBox.getChildren().addAll(titleLabel, spacer, searchField, settingsButton);
+        Button homeButton = new Button("Home");
+        homeButton.setFont(Font.font("Candara", FontWeight.BOLD, 14));
+        homeButton.setStyle("-fx-background-color: #689F38; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15 8 15;");
+        homeButton.setOnAction(event -> {
+            HomeUI homeUI = new HomeUI();
+            Stage homeStage = new Stage();
+            homeUI.start(homeStage);
+            stage.close();
+        });
+
+        topBox.getChildren().addAll(titleLabel, spacer, searchField, homeButton, settingsButton);
         return topBox;
     }
 
-    private VBox createLeftContent() {
+    private static VBox createLeftContent() {
         VBox leftContainer = new VBox(20);
         leftContainer.setPadding(new Insets(20));
 
@@ -104,9 +125,23 @@ public class BudgetUI extends Application {
             consumptionAnalysisImage.setImage(consumptionImage);
         } catch (Exception e) {
             System.err.println("Error loading consumption analysis image: " + e.getMessage());
-            // TODO
         }
-        StackPane consumptionAnalysisTopPane = createHoverableBlock("Consumption Analysis", consumptionAnalysisImage);
+
+        VBox consumptionText = new VBox(5);
+        consumptionText.getChildren().addAll(
+                new Label("Monthly Spending Breakdown (Tabular Data):"),
+                new Label("$500 on food, 25% of the total"),
+                new Label("$800 rent, 40% of the total"),
+                new Label("Keep an eye out for big spending items.")
+        );
+        consumptionText.setAlignment(Pos.CENTER_LEFT);
+        consumptionText.setPadding(new Insets(0, 0, 0, 10));
+
+        HBox consumptionContent = new HBox(15);
+        consumptionContent.setAlignment(Pos.CENTER_LEFT);
+        consumptionContent.getChildren().addAll(consumptionAnalysisImage, consumptionText);
+
+        StackPane consumptionAnalysisTopPane = createHoverableBlock("Consumption Analysis", consumptionContent);
         HBox.setHgrow(consumptionAnalysisTopPane, Priority.ALWAYS);
 
         VBox budgetRecommendationsContent = new VBox(5);
@@ -125,20 +160,34 @@ public class BudgetUI extends Application {
         savingsGoalProgressImage.setFitWidth(400);
         savingsGoalProgressImage.setFitHeight(150);
         try {
-            javafx.scene.image.Image savingsImage = new javafx.scene.image.Image("file:image/Chart.png"); // 替换为你的条形图路径
+            javafx.scene.image.Image savingsImage = new javafx.scene.image.Image("file:image/Chart.png");
             savingsGoalProgressImage.setImage(savingsImage);
         } catch (Exception e) {
             System.err.println("Error loading savings goal progress image: " + e.getMessage());
             // TODO
         }
-        StackPane savingsGoalProgressPane = createHoverableBlock("Savings Goal Progress", savingsGoalProgressImage);
+
+        VBox savingsText = new VBox(5);
+        savingsText.getChildren().addAll(
+                new Label("Progress towards Savings Goal (Tabular Data):"),
+                new Label("Necessary goal: $1200 saved / $2000 goal (60%)"),
+                new Label("Emergency Fund: $3500 Saved / $5000 Goal (70%)")
+        );
+        savingsText.setAlignment(Pos.CENTER_LEFT);
+        savingsText.setPadding(new Insets(0, 0, 0, 10));
+
+        HBox savingsContent = new HBox(15);
+        savingsContent.setAlignment(Pos.CENTER_LEFT);
+        savingsContent.getChildren().addAll(savingsGoalProgressImage, savingsText);
+
+        StackPane savingsGoalProgressPane = createHoverableBlock("Savings Goal Progress", savingsContent);
         VBox.setVgrow(savingsGoalProgressPane, Priority.ALWAYS);
         leftContainer.getChildren().add(savingsGoalProgressPane);
 
         return leftContainer;
     }
 
-    private VBox createRightSection() {
+    private static VBox createRightSection() {
         VBox rightBox = new VBox(20);
         rightBox.setPadding(new Insets(20));
         rightBox.setMinWidth(180);
@@ -152,11 +201,16 @@ public class BudgetUI extends Application {
         openSettingsButton.setFont(Font.font("Candara", 14));
         openSettingsButton.setStyle("-fx-background-color: #689F38; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 15 10 15; -fx-pref-width: 160;");
 
+        openSettingsButton.setOnAction(event -> {
+            Stage currentStage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+            currentStage.getScene().setRoot(SettingsUI.createContent(currentStage));
+        });
+
         rightBox.getChildren().addAll(importButton, openSettingsButton);
         return rightBox;
     }
 
-    private StackPane createHoverableBlock(String title, Object content) {
+    private static StackPane createHoverableBlock(String title, Object content) {
         StackPane block = new StackPane();
         block.setPadding(new Insets(15));
         block.setStyle("-fx-background-color: #f9f9f9; -fx-border-radius: 5; -fx-border-color: #ddd;");
@@ -169,15 +223,16 @@ public class BudgetUI extends Application {
 
         if (content instanceof String) {
             Label contentLabel = new Label((String) content);
-            contentLabel.setFont(Font.font("Arial", 14));
+            contentLabel.setFont(Font.font("Arial", 24));
             contentBox.getChildren().add(contentLabel);
         } else if (content instanceof javafx.scene.Node) {
             contentBox.getChildren().add((javafx.scene.Node) content);
         }
 
+        StackPane.setAlignment(contentBox, Pos.TOP_LEFT);
+
         block.getChildren().add(contentBox);
 
-        // Hover effect
         block.setOnMouseEntered(e -> block.setStyle("-fx-background-color: #e9e9e9; -fx-border-radius: 5; -fx-border-color: #bbb;"));
         block.setOnMouseExited(e -> block.setStyle("-fx-background-color: #f9f9f9; -fx-border-radius: 5; -fx-border-color: #ddd;"));
 

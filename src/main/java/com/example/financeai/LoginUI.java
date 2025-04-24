@@ -21,7 +21,7 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 
-public class FinanceAIApp extends Application {
+public class LoginUI extends Application {
 
     @Override
     public void start(Stage primaryStage) {
@@ -31,8 +31,8 @@ public class FinanceAIApp extends Application {
         double screenWidth = screen.getVisualBounds().getWidth();
         double screenHeight = screen.getVisualBounds().getHeight();
 
-        double windowWidth = screenWidth * 0.8;
-        double windowHeight = screenHeight * 0.8;
+        double windowWidth = screenWidth * 0.9;
+        double windowHeight = screenHeight * 0.9;
 
         VBox leftPane = new VBox(20);
         leftPane.setAlignment(Pos.CENTER);
@@ -65,7 +65,7 @@ public class FinanceAIApp extends Application {
 
         Label savingsLabel = new Label("Set Savings Goals");
         savingsLabel.setFont(Font.font("Candara", 18));
-        savingsLabel.setPadding(new Insets(5, 0, 0, 0)); // 添加上边距
+        savingsLabel.setPadding(new Insets(5, 0, 0, 0));
         grid.add(savingsLabel, 0, 1);
 
         TextField savingsTextField = new TextField();
@@ -94,8 +94,8 @@ public class FinanceAIApp extends Application {
 
         loginButton.setOnAction(event -> {
             Stage stage = new Stage();
-            ExpenseOverviewApp expenseOverviewApp = new ExpenseOverviewApp();
-            expenseOverviewApp.start(stage);
+            TrackUI trackUI = new TrackUI();
+            trackUI.start(stage);
             primaryStage.close();
         });
 
@@ -120,10 +120,10 @@ public class FinanceAIApp extends Application {
         root.setCenter(content);
         HBox topBox = new HBox(topRightTitle);
         topBox.setAlignment(Pos.TOP_RIGHT);
+        topBox.setPadding(new Insets(20, 30, 0, 0));
         root.setTop(topBox);
 
         BorderPane.setAlignment(topRightTitle, Pos.TOP_RIGHT);
-        BorderPane.setMargin(topRightTitle, new Insets(10, 10, 0, 0));
 
         Scene scene = new Scene(root, windowWidth, windowHeight);
         primaryStage.setScene(scene);

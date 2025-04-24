@@ -1,4 +1,4 @@
-package com.example.financeai; // HomeUI.java
+package com.example.financeai;
 
 import javafx.application.Application;
 import javafx.geometry.Insets;

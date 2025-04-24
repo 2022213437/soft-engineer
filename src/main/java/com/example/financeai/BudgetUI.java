@@ -19,7 +19,7 @@ public class BudgetUI extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        primaryStage.setTitle("AI Finance Tracker - Budget");
+        primaryStage.setTitle("Budget");
 
         Screen screen = Screen.getPrimary();
         double screenWidth = screen.getVisualBounds().getWidth();

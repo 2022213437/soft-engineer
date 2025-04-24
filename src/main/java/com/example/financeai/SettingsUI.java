@@ -16,7 +16,7 @@ public class SettingsUI extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        primaryStage.setTitle("AI Finance Tracker - Settings");
+        primaryStage.setTitle("Settings");
 
         Screen screen = Screen.getPrimary();
         double screenWidth = screen.getVisualBounds().getWidth();

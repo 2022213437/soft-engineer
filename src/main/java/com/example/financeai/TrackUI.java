@@ -159,14 +159,14 @@ public class TrackUI extends Application {
                         "Total Expenses",
                         "$2,580.75",
                         "This Month",
-                        "file:image/Icon chart.png",
+                        "file:image/chartHD.png",
                         "#E3F2FD"
                 ),
                 createExpenseCard(
                         "Budget Left",
                         "$1,419.25",
                         "From $4,000",
-                        "file:image/Icon heart.png",
+                        "file:image/HeartHD.png",
                         "#F3E5F5"
                 ),
                 createExpenseCard(

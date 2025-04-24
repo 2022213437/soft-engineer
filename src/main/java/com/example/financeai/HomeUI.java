@@ -154,7 +154,7 @@ public class HomeUI extends Application {
                 createFeatureCard(
                         "Track Expenses",
                         "Monitor your daily spending",
-                        "file:image/Icon search.png",
+                        "file:image/searchHD.png",
                         "#E3F2FD"
                 ),
                 createFeatureCard(
@@ -166,7 +166,7 @@ public class HomeUI extends Application {
                 createFeatureCard(
                         "Manage Budget",
                         "Set and track your budgets",
-                        "file:image/Icon heart.png",
+                        "file:image/HeartHD.png",
                         "#E8F5E9"
                 )
         };
@@ -223,10 +223,10 @@ public class HomeUI extends Application {
         actionButtons.setAlignment(Pos.CENTER_LEFT);
 
         Button[] buttons = {
-                createActionButton("Add Transaction", "file:image/Icon plus.png"),
-                createActionButton("View Reports", "file:image/Icon chart.png"),
-                createActionButton("Set Budget", "file:image/Icon heart.png"),
-                createActionButton("View Goals", "file:image/Icon target.png")
+                createActionButton("Add Transaction", "file:image/PlusHD.png"),
+                createActionButton("View Reports", "file:image/ChartHD2.png"),
+                createActionButton("Set Budget", "file:image/HeartHD.png"),
+                createActionButton("View Goals", "file:image/TargetHD.png")
         };
 
         actionButtons.getChildren().addAll(buttons);

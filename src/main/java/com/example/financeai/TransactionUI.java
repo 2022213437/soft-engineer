@@ -15,8 +15,45 @@ import javafx.stage.FileChooser;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.scene.control.cell.PropertyValueFactory;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TransactionUI extends Application {
+    private TableView<Transaction> transactionTable;
+    private ObservableList<Transaction> transactionData = FXCollections.observableArrayList();
+    private ComboBox<String> categoryFilter;
+    
+    // Transaction类用于存储交易数据
+    public static class Transaction {
+        private final String date;
+        private final String description;
+        private final double amount;
+        private String category;
+        
+        public Transaction(String date, String description, double amount, String category) {
+            this.date = date;
+            this.description = description;
+            this.amount = amount;
+            this.category = category;
+        }
+        
+        // Getters
+        public String getDate() { return date; }
+        public String getDescription() { return description; }
+        public double getAmount() { return amount; }
+        public String getCategory() { return category; }
+        
+        // Setter for category
+        public void setCategory(String category) { this.category = category; }
+    }
 
     @Override
     public void start(Stage primaryStage) {
@@ -142,139 +179,200 @@ public class TransactionUI extends Application {
         VBox leftVBox = new VBox(15);
 
         BorderPane titlePane = new BorderPane();
-        Label transactionTitle = new Label("Transaction Classification");
+        Label transactionTitle = new Label("Transaction Management");
         transactionTitle.setFont(Font.font("Candara", FontWeight.BOLD, 20));
         Button importButton = new Button("Import CSV");
         importButton.setStyle("-fx-background-color: #689F38; -fx-text-fill: white; -fx-font-weight: bold;");
         titlePane.setLeft(transactionTitle);
         titlePane.setRight(importButton);
 
+        // Create table
+        TableView<Transaction> transactionTable = new TableView<>();
+        transactionTable.setStyle("-fx-background-color: white; -fx-border-color: #DCEDC8; -fx-border-width: 1;");
+
+        // Create columns
+        TableColumn<Transaction, String> dateCol = new TableColumn<>("Date");
+        dateCol.setCellValueFactory(new PropertyValueFactory<>("date"));
+        dateCol.setPrefWidth(100);
+
+        TableColumn<Transaction, String> descCol = new TableColumn<>("Description");
+        descCol.setCellValueFactory(new PropertyValueFactory<>("description"));
+        descCol.setPrefWidth(200);
+
+        TableColumn<Transaction, Double> amountCol = new TableColumn<>("Amount");
+        amountCol.setCellValueFactory(new PropertyValueFactory<>("amount"));
+        amountCol.setPrefWidth(100);
+
+        TableColumn<Transaction, String> categoryCol = new TableColumn<>("Category");
+        categoryCol.setCellValueFactory(new PropertyValueFactory<>("category"));
+        categoryCol.setPrefWidth(150);
+
+        transactionTable.getColumns().addAll(dateCol, descCol, amountCol, categoryCol);
+
+        // Add category filter
+        HBox filterBox = new HBox(10);
+        filterBox.setAlignment(Pos.CENTER_LEFT);
+        Label filterLabel = new Label("Filter by Category:");
+        ComboBox<String> categoryFilter = new ComboBox<>();
+        categoryFilter.getItems().addAll("All", "Food & Beverage", "Shopping", "Transport", "Entertainment", "Other");
+        categoryFilter.setValue("All");
+        filterBox.getChildren().addAll(filterLabel, categoryFilter);
+
         importButton.setOnAction(event -> {
             FileChooser fileChooser = new FileChooser();
-            fileChooser.setTitle("选择 CSV 文件导入");
+            fileChooser.setTitle("Select CSV File");
 
-            FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("CSV 文件 (*.csv)", "*.csv");
+            FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("CSV Files (*.csv)", "*.csv");
             fileChooser.getExtensionFilters().add(extFilter);
 
             java.io.File file = fileChooser.showOpenDialog(stage);
-
             if (file != null) {
-                System.out.println("已选择文件: " + file.getAbsolutePath());
-            } else {
-                System.out.println("文件选择已取消。");
+                try {
+                    loadCSVData(file, transactionTable);
+                } catch (IOException e) {
+                    showError("File Read Error", "Unable to read CSV file: " + e.getMessage());
+                }
             }
         });
 
-        Label transactionsLabel = new Label("Transactions");
-        transactionsLabel.setFont(Font.font("Candara", FontWeight.BOLD, 16));
-        transactionsLabel.setPadding(new Insets(0, 0, 0, 5));
-
-        VBox transactionsList = new VBox(10);
-        transactionsList.setStyle("-fx-background-color: #F1F8E9; " +
-                "-fx-padding: 15; " +
-                "-fx-border-color: #DCEDC8; " +
-                "-fx-border-width: 1; " +
-                "-fx-border-radius: 5;");
-        transactionsList.getChildren().addAll(
-                createTransactionRow("12/10/2023 - Starbucks Coffee", "$5.00 - Suggested: Food & Beverage"),
-                createTransactionRow("11/10/2023 - Amazon Purchase", "$120.00 - Suggested: Shopping"),
-                createTransactionRow("10/10/2023 - Uber Ride", "$15.00 - Suggested: Transport")
-        );
-
-        leftVBox.getChildren().addAll(titlePane, transactionsLabel, transactionsList);
+        leftVBox.getChildren().addAll(titlePane, filterBox, transactionTable);
         return leftVBox;
     }
 
-    private static HBox createTransactionRow(String descriptionLine, String amountLine) {
-        HBox row = new HBox(10);
-        row.setAlignment(Pos.CENTER_LEFT);
-        row.setPadding(new Insets(10));
-        row.setStyle("-fx-background-color: white; " +
-                "-fx-border-color: #E0E0E0; " +
-                "-fx-border-width: 1; " +
-                "-fx-border-radius: 3;");
+    private static void loadCSVData(java.io.File file, TableView<Transaction> table) throws IOException {
+        ObservableList<Transaction> data = FXCollections.observableArrayList();
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            String line;
+            boolean isFirstLine = true;
+            while ((line = br.readLine()) != null) {
+                if (isFirstLine) {
+                    isFirstLine = false;
+                    continue;
+                }
+                String[] values = line.split(",");
+                if (values.length >= 3) {
+                    String date = values[0].trim();
+                    String description = values[1].trim();
+                    double amount = Double.parseDouble(values[2].trim());
+                    String category = values.length > 3 ? values[3].trim() : "Uncategorized";
+                    data.add(new Transaction(date, description, amount, category));
+                }
+            }
+        }
+        table.setItems(data);
+    }
 
-        VBox details = new VBox(2);
-        Label descLabel = new Label(descriptionLine);
-        descLabel.setFont(Font.font("Arial", FontWeight.NORMAL, 13));
-        Label amountLabel = new Label(amountLine);
-        amountLabel.setFont(Font.font("Arial", FontWeight.NORMAL, 12));
-        amountLabel.setTextFill(Color.GRAY);
-        details.getChildren().addAll(descLabel, amountLabel);
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-
-        Button confirmButton = new Button("Confirm");
-        confirmButton.setFont(Font.font("Candara", FontWeight.BOLD, 12));
-        confirmButton.setStyle("-fx-background-color: #689F38; -fx-text-fill: white;");
-        Button editButton = new Button("Edit");
-        editButton.setFont(Font.font("Candara", FontWeight.BOLD, 12));
-
-        row.getChildren().addAll(details, spacer, confirmButton, editButton);
-        return row;
+    private static void showError(String title, String content) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(content);
+        alert.showAndWait();
     }
 
     private static VBox createRightColumn() {
         VBox rightVBox = new VBox(20);
-        rightVBox.setPadding(new Insets(10));
-        rightVBox.setStyle("-fx-background-color: #DEf2CD; " +
+        rightVBox.setPadding(new Insets(15));
+        rightVBox.setStyle("-fx-background-color: #F5F5F5; " +
+                "-fx-border-color: #E0E0E0; " +
+                "-fx-border-width: 1; " +
                 "-fx-border-radius: 5;");
 
-        rightVBox.getChildren().addAll(
-                createManageCategoriesBox(),
-                createAddTransactionBox()
-        );
+        // Add statistics panel
+        VBox statsBox = createStatsBox();
+        statsBox.setStyle("-fx-background-color: white; -fx-padding: 15; -fx-border-radius: 5;");
 
+        // Add category management panel
+        VBox categoryBox = createCategoryManagementBox();
+        categoryBox.setStyle("-fx-background-color: white; -fx-padding: 15; -fx-border-radius: 5;");
+
+        // Add quick add transaction panel
+        VBox quickAddBox = createQuickAddBox();
+        quickAddBox.setStyle("-fx-background-color: white; -fx-padding: 15; -fx-border-radius: 5;");
+
+        rightVBox.getChildren().addAll(statsBox, categoryBox, quickAddBox);
         return rightVBox;
     }
 
-    private static VBox createManageCategoriesBox() {
+    private static VBox createStatsBox() {
         VBox box = new VBox(10);
-        box.setPadding(new Insets(10));
-
-        Label title = new Label("Manage Categories");
-        title.setFont(Font.font("Candara", FontWeight.BOLD, 14));
-
-        VBox categoryList = new VBox(5);
-        categoryList.getChildren().addAll(
-                new Label("Food & Beverage"),
-                new Label("Shopping"),
-                new Label("Transport"),
-                new Label("Utilities")
-        );
-
-        box.getChildren().addAll(title, categoryList);
+        
+        Label title = new Label("Statistics Overview");
+        title.setFont(Font.font("Candara", FontWeight.BOLD, 16));
+        
+        GridPane statsGrid = new GridPane();
+        statsGrid.setHgap(10);
+        statsGrid.setVgap(10);
+        
+        // Add statistics items
+        addStatItem(statsGrid, 0, "Total Transactions", "0");
+        addStatItem(statsGrid, 1, "Monthly Expenses", "$0.00");
+        addStatItem(statsGrid, 2, "Average Transaction", "$0.00");
+        addStatItem(statsGrid, 3, "Largest Expense", "$0.00");
+        
+        box.getChildren().addAll(title, statsGrid);
         return box;
     }
 
-    private static VBox createAddTransactionBox() {
+    private static void addStatItem(GridPane grid, int row, String label, String value) {
+        Label statLabel = new Label(label);
+        statLabel.setStyle("-fx-text-fill: #666666;");
+        Label statValue = new Label(value);
+        statValue.setStyle("-fx-font-weight: bold; -fx-font-size: 14;");
+        
+        grid.add(statLabel, 0, row);
+        grid.add(statValue, 1, row);
+    }
+
+    private static VBox createCategoryManagementBox() {
         VBox box = new VBox(10);
-        box.setPadding(new Insets(10));
-        box.setStyle("-fx-border-color: #DEf2CD; " +
-                "-fx-border-width: 1 0 0 0;");
+        
+        Label title = new Label("Category Management");
+        title.setFont(Font.font("Candara", FontWeight.BOLD, 16));
+        
+        ListView<String> categoryList = new ListView<>();
+        categoryList.getItems().addAll("Food & Beverage", "Shopping", "Transport", "Entertainment", "Other");
+        categoryList.setPrefHeight(150);
+        
+        HBox buttonBox = new HBox(10);
+        Button addButton = new Button("Add");
+        Button editButton = new Button("Edit");
+        Button deleteButton = new Button("Delete");
+        
+        addButton.setStyle("-fx-background-color: #689F38; -fx-text-fill: white;");
+        editButton.setStyle("-fx-background-color: #2196F3; -fx-text-fill: white;");
+        deleteButton.setStyle("-fx-background-color: #F44336; -fx-text-fill: white;");
+        
+        buttonBox.getChildren().addAll(addButton, editButton, deleteButton);
+        
+        box.getChildren().addAll(title, categoryList, buttonBox);
+        return box;
+    }
 
-        Label title = new Label("Add Transaction");
-        title.setFont(Font.font("Candara", FontWeight.BOLD, 14));
-
-        Label dateLabel = new Label("Date");
-        dateLabel.setFont(Font.font("HP Simplified"));
-        TextField dateField = new TextField();
-
-        Label descLabel = new Label("Description");
-        descLabel.setFont(Font.font("HP Simplified"));
+    private static VBox createQuickAddBox() {
+        VBox box = new VBox(10);
+        
+        Label title = new Label("Quick Add Transaction");
+        title.setFont(Font.font("Candara", FontWeight.BOLD, 16));
+        
+        DatePicker datePicker = new DatePicker();
+        datePicker.setPromptText("Select Date");
+        
         TextField descField = new TextField();
-
-        Label idrLabel = new Label("ID");
-        idrLabel.setFont(Font.font("HP Simplified"));
-        TextField idrField = new TextField();
-
-        Button submitButton = new Button("Submit");
-        submitButton.setFont(Font.font("Candara"));
-        submitButton.setMaxWidth(Double.MAX_VALUE);
-        submitButton.setStyle("-fx-background-color: #689F38; -fx-text-fill: white; -fx-font-weight: bold;");
-
-        box.getChildren().addAll(title, dateLabel, dateField, descLabel, descField, idrLabel, idrField, submitButton);
+        descField.setPromptText("Transaction Description");
+        
+        TextField amountField = new TextField();
+        amountField.setPromptText("Amount");
+        
+        ComboBox<String> categoryCombo = new ComboBox<>();
+        categoryCombo.getItems().addAll("Food & Beverage", "Shopping", "Transport", "Entertainment", "Other");
+        categoryCombo.setPromptText("Select Category");
+        
+        Button addButton = new Button("Add Transaction");
+        addButton.setMaxWidth(Double.MAX_VALUE);
+        addButton.setStyle("-fx-background-color: #689F38; -fx-text-fill: white; -fx-font-weight: bold;");
+        
+        box.getChildren().addAll(title, datePicker, descField, amountField, categoryCombo, addButton);
         return box;
     }
 

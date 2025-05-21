@@ -6,6 +6,8 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
@@ -57,7 +59,7 @@ public class TransactionUI extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        primaryStage.initStyle(StageStyle.UNDECORATED);
+        primaryStage.setTitle("Transaction");
 
         Screen screen = Screen.getPrimary();
         double screenWidth = screen.getVisualBounds().getWidth();
@@ -66,123 +68,81 @@ public class TransactionUI extends Application {
         double windowWidth = screenWidth * 0.9;
         double windowHeight = screenHeight * 0.9;
 
-        BorderPane root = createContent(primaryStage);
-
-        Scene scene = new Scene(root, windowWidth, windowHeight);
+        BorderPane rootLayout = createContent(primaryStage);
+        Scene scene = new Scene(rootLayout, windowWidth, windowHeight);
         primaryStage.setScene(scene);
         primaryStage.show();
     }
 
     public static BorderPane createContent(Stage stage) {
-        BorderPane root = new BorderPane();
-        root.setPadding(new Insets(15));
+        BorderPane rootLayout = new BorderPane();
+        rootLayout.setStyle("-fx-background-color: white;");
 
-        HBox titleBar = createCustomTitleBar(stage);
-        root.setTop(titleBar);
+        VBox sidebar = createSidebar(stage);
+        rootLayout.setLeft(sidebar);
 
-        HBox mainContent = new HBox(20);
-        mainContent.setPadding(new Insets(20, 0, 0, 0));
+        VBox mainContent = createMainContent(stage);
+        ScrollPane scrollPane = new ScrollPane(mainContent);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
 
-        VBox leftColumn = createLeftColumn(stage);
-        HBox.setHgrow(leftColumn, Priority.ALWAYS);
-
-        VBox rightColumn = createRightColumn();
-        rightColumn.setMinWidth(280);
-        rightColumn.setMaxWidth(280);
-
-        mainContent.getChildren().addAll(leftColumn, rightColumn);
-        root.setCenter(mainContent);
-
-        return root;
+        rootLayout.setCenter(scrollPane);
+        return rootLayout;
     }
 
-    private static HBox createCustomTitleBar(Stage stage) {
-        HBox titleBar = new HBox(20);
-        titleBar.setStyle("-fx-background-color: #333; -fx-padding: 10;");
-        titleBar.setAlignment(Pos.CENTER_LEFT);
+    private static VBox createMainContent(Stage stage) {
+        VBox mainContent = new VBox(30);
+        mainContent.setPadding(new Insets(30));
+        mainContent.setStyle("-fx-background-color: #F8F9FA;");
 
-        Label titleLabel = new Label("FinanceAI Tracker");
-        titleLabel.setFont(Font.font("Arial Black", FontWeight.BOLD, 18));
-        titleLabel.setStyle("-fx-text-fill: white;");
+        HBox topBar = createTopBar();
+        mainContent.getChildren().add(topBar);
 
-        HBox navLinks = new HBox(20);
-        navLinks.setAlignment(Pos.CENTER_RIGHT);
+        HBox contentWrapper = new HBox(30);
+        contentWrapper.setPadding(new Insets(20, 0, 0, 0));
 
-        Hyperlink dashboardLink = new Hyperlink("Dashboard");
-        dashboardLink.setOnAction(event -> {
-            DashboardUI dashboardUI = new DashboardUI();
-            Stage dashboardStage = new Stage();
-            dashboardUI.start(dashboardStage);
-            stage.close();
-        });
-        dashboardLink.setStyle("-fx-text-fill: white;");
+        VBox leftContent = createLeftColumn(stage);
+        HBox.setHgrow(leftContent, Priority.ALWAYS);
 
-        Hyperlink homeLink = new Hyperlink("Home");
-        homeLink.setOnAction(event -> {
-            HomeUI homeUI = new HomeUI();
-            Stage homeStage = new Stage();
-            homeUI.start(homeStage);
-            stage.close();
-        });
-        homeLink.setStyle("-fx-text-fill: white;");
+        VBox rightContent = createRightColumn();
+        rightContent.setPrefWidth(400);
 
-        Hyperlink transactionLink = new Hyperlink("Transaction Classification");
-        transactionLink.setUnderline(true);
-        transactionLink.setStyle("-fx-text-fill: white; -fx-font-weight: bold;");
+        contentWrapper.getChildren().addAll(leftContent, rightContent);
+        mainContent.getChildren().add(contentWrapper);
 
-        Hyperlink settingsLink = new Hyperlink("Settings");
-        settingsLink.setStyle("-fx-text-fill: white;");
+        return mainContent;
+    }
 
-        settingsLink.setOnAction(event -> {
-            stage.getScene().setRoot(SettingsUI.createContent(stage));
-        });
+    private static HBox createTopBar() {
+        HBox topBar = new HBox();
+        topBar.setAlignment(Pos.CENTER_LEFT);
+        topBar.setSpacing(20);
+        topBar.setPadding(new Insets(0, 0, 20, 0));
 
-        navLinks.getChildren().addAll(dashboardLink, homeLink, transactionLink, settingsLink);
-
-        Button closeButton = new Button("X");
-        closeButton.setStyle("-fx-background-color: #812F33; -fx-text-fill: white; -fx-font-weight: bold;");
-        closeButton.setOnAction(e -> stage.close());
+        Label titleLabel = new Label("Transaction Management");
+        titleLabel.setFont(Font.font("Arial Black", FontWeight.BOLD, 26));
+        titleLabel.setStyle("-fx-text-fill: black;");
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        titleBar.setOnMousePressed((MouseEvent event) -> {
-            Stage currentStage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-            double[] offsets = new double[2];
-            offsets[0] = event.getSceneX();
-            offsets[1] = event.getSceneY();
-            titleBar.setUserData(offsets);
-        });
-
-        titleBar.setOnMouseDragged((MouseEvent event) -> {
-            Stage currentStage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-            double[] offsets = (double[]) titleBar.getUserData();
-            if (offsets != null) {
-                currentStage.setX(event.getScreenX() - offsets[0]);
-                currentStage.setY(event.getSceneY() - offsets[1]);
-            }
-        });
-
-
-        titleBar.getChildren().addAll(titleLabel, spacer, navLinks, closeButton);
-        return titleBar;
-    }
-
-    private static BorderPane createHeader() {
-        BorderPane headerPane = new BorderPane();
-        headerPane.setPadding(new Insets(0, 0, 15, 0));
-        headerPane.setBorder(new Border(new BorderStroke(Color.LIGHTGRAY, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(0, 0, 1, 0))));
-        return headerPane;
+        topBar.getChildren().addAll(titleLabel, spacer);
+        return topBar;
     }
 
     private static VBox createLeftColumn(Stage stage) {
         VBox leftVBox = new VBox(15);
+        leftVBox.setStyle("-fx-background-color: white; -fx-background-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0, 0, 0);");
+        leftVBox.setPadding(new Insets(20));
 
         BorderPane titlePane = new BorderPane();
-        Label transactionTitle = new Label("Transaction Management");
+        Label transactionTitle = new Label("Transaction List");
         transactionTitle.setFont(Font.font("Candara", FontWeight.BOLD, 20));
+        transactionTitle.setStyle("-fx-text-fill: black");
         Button importButton = new Button("Import CSV");
-        importButton.setStyle("-fx-background-color: #689F38; -fx-text-fill: white; -fx-font-weight: bold;");
+        importButton.setStyle("-fx-background-color: #689F38; -fx-text-fill: black; -fx-font-weight: bold; -fx-padding: 10 20 10 20;");
         titlePane.setLeft(transactionTitle);
         titlePane.setRight(importButton);
 
@@ -272,11 +232,8 @@ public class TransactionUI extends Application {
 
     private static VBox createRightColumn() {
         VBox rightVBox = new VBox(20);
-        rightVBox.setPadding(new Insets(15));
-        rightVBox.setStyle("-fx-background-color: #F5F5F5; " +
-                "-fx-border-color: #E0E0E0; " +
-                "-fx-border-width: 1; " +
-                "-fx-border-radius: 5;");
+        rightVBox.setPadding(new Insets(20));
+        rightVBox.setStyle("-fx-background-color: white; -fx-background-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0, 0, 0);");
 
         // Add statistics panel
         VBox statsBox = createStatsBox();
@@ -298,7 +255,8 @@ public class TransactionUI extends Application {
         VBox box = new VBox(10);
         
         Label title = new Label("Statistics Overview");
-        title.setFont(Font.font("Candara", FontWeight.BOLD, 16));
+        title.setFont(Font.font("Arial Black", FontWeight.BOLD, 16));
+        title.setStyle("-fx-text-fill: black");
         
         GridPane statsGrid = new GridPane();
         statsGrid.setHgap(10);
@@ -329,6 +287,7 @@ public class TransactionUI extends Application {
         
         Label title = new Label("Category Management");
         title.setFont(Font.font("Candara", FontWeight.BOLD, 16));
+        title.setStyle("-fx-text-fill: black");
         
         ListView<String> categoryList = new ListView<>();
         categoryList.getItems().addAll("Food & Beverage", "Shopping", "Transport", "Entertainment", "Other");
@@ -339,9 +298,9 @@ public class TransactionUI extends Application {
         Button editButton = new Button("Edit");
         Button deleteButton = new Button("Delete");
         
-        addButton.setStyle("-fx-background-color: #689F38; -fx-text-fill: white;");
-        editButton.setStyle("-fx-background-color: #2196F3; -fx-text-fill: white;");
-        deleteButton.setStyle("-fx-background-color: #F44336; -fx-text-fill: white;");
+        addButton.setStyle("-fx-background-color: #689F38; -fx-text-fill: black;");
+        editButton.setStyle("-fx-background-color: #2196F3; -fx-text-fill: black;");
+        deleteButton.setStyle("-fx-background-color: #F44336; -fx-text-fill: black;");
         
         buttonBox.getChildren().addAll(addButton, editButton, deleteButton);
         
@@ -354,6 +313,7 @@ public class TransactionUI extends Application {
         
         Label title = new Label("Quick Add Transaction");
         title.setFont(Font.font("Candara", FontWeight.BOLD, 16));
+        title.setStyle("-fx-text-fill: black");
         
         DatePicker datePicker = new DatePicker();
         datePicker.setPromptText("Select Date");
@@ -370,10 +330,138 @@ public class TransactionUI extends Application {
         
         Button addButton = new Button("Add Transaction");
         addButton.setMaxWidth(Double.MAX_VALUE);
-        addButton.setStyle("-fx-background-color: #689F38; -fx-text-fill: white; -fx-font-weight: bold;");
+        addButton.setStyle("-fx-background-color: #689F38; -fx-text-fill: black; -fx-font-weight: bold;");
         
         box.getChildren().addAll(title, datePicker, descField, amountField, categoryCombo, addButton);
         return box;
+    }
+
+    private static VBox createSidebar(Stage stage) {
+        VBox sidebar = new VBox(20);
+        sidebar.setPadding(new Insets(20));
+        sidebar.setStyle("-fx-background-color: #DEF2CD;");
+        sidebar.setPrefWidth(200);
+
+        Label financeTitle = new Label("FinanceAI");
+        financeTitle.setFont(Font.font("Candara", FontWeight.BOLD, 20));
+        financeTitle.setStyle("-fx-text-fill: black");
+        VBox.setMargin(financeTitle, new Insets(0, 0, 20, 0));
+
+        Button homeButton = createSidebarButton("Home", "file:image/Icon home.png", 18);
+        Button trackButton = createSidebarButton("Track", "file:image/Icon search.png", 18);
+        Button transactionButton = createSidebarButton("Transaction", "file:image/Icon book open.png", 18);
+        Button dashboardButton = createSidebarButton("Dashboard", "file:image/dashboard.png", 18);
+        Button budgetButton = createSidebarButton("Budget", "file:image/Icon heart.png", 18);
+
+        Region spacer = new Region();
+        VBox.setVgrow(spacer, Priority.ALWAYS);
+
+        Button settingsButton = createSidebarButton("Settings", "file:image/Icon gear.png", 18);
+        Button logoutButton = createSidebarButton("Log out", "file:image/Icon right from bracket.png", 18);
+
+        transactionButton.setStyle("-fx-background-color: white; -fx-text-fill: black;");
+        transactionButton.setOnMouseEntered(null);
+        transactionButton.setOnMouseExited(null);
+
+        homeButton.setOnAction(event -> {
+            HomeUI homeUI = new HomeUI();
+            Stage homeStage = new Stage();
+            homeUI.start(homeStage);
+            stage.close();
+        });
+
+        trackButton.setOnAction(event -> {
+            TrackUI trackUI = new TrackUI();
+            Stage trackStage = new Stage();
+            trackUI.start(trackStage);
+            stage.close();
+        });
+
+        dashboardButton.setOnAction(event -> {
+            DashboardUI dashboardUI = new DashboardUI();
+            Stage dashboardStage = new Stage();
+            dashboardUI.start(dashboardStage);
+            stage.close();
+        });
+
+        budgetButton.setOnAction(event -> {
+            BudgetUI budgetUI = new BudgetUI();
+            Stage budgetStage = new Stage();
+            budgetUI.start(budgetStage);
+            stage.close();
+        });
+
+        settingsButton.setOnAction(event -> {
+            SettingsUI settingsUI = new SettingsUI();
+            Stage settingsStage = new Stage();
+            settingsUI.start(settingsStage);
+            stage.close();
+        });
+
+        logoutButton.setOnAction(event -> {
+            LoginUI loginUI = new LoginUI();
+            Stage loginStage = new Stage();
+            loginUI.start(loginStage);
+            stage.close();
+        });
+
+        sidebar.getChildren().addAll(
+                financeTitle,
+                homeButton,
+                trackButton,
+                transactionButton,
+                dashboardButton,
+                budgetButton,
+                spacer,
+                settingsButton,
+                logoutButton
+        );
+
+        return sidebar;
+    }
+
+    private static Button createSidebarButton(String text, String imagePath, double iconSize) {
+        Button button = new Button();
+        button.setMaxWidth(Double.MAX_VALUE);
+        button.setAlignment(Pos.CENTER_LEFT);
+
+        Font buttonFont = Font.font("Arial", 16);
+
+        ImageView icon = new ImageView(new Image(imagePath));
+        icon.setFitHeight(iconSize);
+        icon.setFitWidth(iconSize);
+        icon.setPreserveRatio(true);
+
+        HBox buttonContent = new HBox(10);
+        buttonContent.setAlignment(Pos.CENTER_LEFT);
+
+        Label buttonLabel = new Label(text);
+        buttonLabel.setFont(buttonFont);
+        buttonLabel.setStyle("-fx-text-fill: black;");
+
+        buttonContent.getChildren().addAll(icon, buttonLabel);
+
+        button.setGraphic(buttonContent);
+        button.setText("");
+        button.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+
+        String defaultStyle = "-fx-background-color: transparent; -fx-text-fill: black;";
+        String hoverStyle = "-fx-background-color: #C8E6C9; -fx-text-fill: black;";
+        String activeStyle = "-fx-background-color: white; -fx-text-fill: black;";
+
+        button.setStyle(defaultStyle);
+        button.setOnMouseEntered(e -> {
+            if (!button.getStyle().equals(activeStyle)) {
+                button.setStyle(hoverStyle);
+            }
+        });
+        button.setOnMouseExited(e -> {
+            if (!button.getStyle().equals(activeStyle)) {
+                button.setStyle(defaultStyle);
+            }
+        });
+
+        return button;
     }
 
     public static void main(String[] args) {

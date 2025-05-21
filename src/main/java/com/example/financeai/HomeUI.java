@@ -10,6 +10,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Screen;
@@ -55,14 +56,66 @@ public class HomeUI extends Application {
     }
 
     private static VBox createMainContent() {
-        VBox mainContent = new VBox(20);
-        mainContent.setPadding(new Insets(20));
+        VBox mainContent = new VBox(30);
+        mainContent.setPadding(new Insets(30));
         mainContent.setStyle("-fx-background-color: #F8F9FA;");
 
         HBox topBar = createTopBar();
-        VBox homeContent = createHomeContent();
+        mainContent.getChildren().add(topBar);
 
-        mainContent.getChildren().addAll(topBar, homeContent);
+        // Create main features section
+        HBox featuresBox = new HBox(30);
+        featuresBox.setAlignment(Pos.CENTER);
+
+        // Track Expenses Card
+        VBox trackCard = createFeatureCard(
+            "Track Expenses",
+            "Monitor your daily expenses and track your spending patterns",
+            "file:image/Icon search.png",
+            "#E3F2FD"
+        );
+        trackCard.setOnMouseClicked(e -> {
+            TrackUI trackUI = new TrackUI();
+            Stage trackStage = new Stage();
+            trackUI.start(trackStage);
+            ((Stage) trackCard.getScene().getWindow()).close();
+        });
+
+        // View Dashboard Card
+        VBox dashboardCard = createFeatureCard(
+            "View Dashboard",
+            "Get insights into your financial health with interactive charts",
+            "file:image/dashboard.png",
+            "#F3E5F5"
+        );
+        dashboardCard.setOnMouseClicked(e -> {
+            DashboardUI dashboardUI = new DashboardUI();
+            Stage dashboardStage = new Stage();
+            dashboardUI.start(dashboardStage);
+            ((Stage) dashboardCard.getScene().getWindow()).close();
+        });
+
+        // Manage Budget Card
+        VBox budgetCard = createFeatureCard(
+            "Manage Budget",
+            "Set and manage your budget goals with smart recommendations",
+            "file:image/Icon heart.png",
+            "#E8F5E9"
+        );
+        budgetCard.setOnMouseClicked(e -> {
+            BudgetUI budgetUI = new BudgetUI();
+            Stage budgetStage = new Stage();
+            budgetUI.start(budgetStage);
+            ((Stage) budgetCard.getScene().getWindow()).close();
+        });
+
+        featuresBox.getChildren().addAll(trackCard, dashboardCard, budgetCard);
+        mainContent.getChildren().add(featuresBox);
+
+        // Add Track Statistics Section
+        VBox trackStats = createTrackStatistics();
+        mainContent.getChildren().add(trackStats);
+
         return mainContent;
     }
 
@@ -117,74 +170,16 @@ public class HomeUI extends Application {
         return topBar;
     }
 
-    private static VBox createHomeContent() {
-        VBox homeContent = new VBox(20);
-        homeContent.setPadding(new Insets(20));
-
-        Label welcomeTitle = new Label("Welcome to FinanceAI");
-        welcomeTitle.setFont(Font.font("Arial Black", FontWeight.BOLD, 26));
-        welcomeTitle.setStyle("-fx-text-fill: black;");
-
-        Label subtitle = new Label("Your personal finance assistant");
-        subtitle.setFont(Font.font("Candara", FontWeight.NORMAL, 18));
-        subtitle.setStyle("-fx-text-fill: #666666;");
-
-        VBox.setMargin(subtitle, new Insets(-10, 0, 20, 0));
-
-        HBox featureCards = createFeatureCards();
-        VBox quickActions = createQuickActions();
-        VBox recentActivity = createRecentActivity();
-
-        homeContent.getChildren().addAll(
-                welcomeTitle,
-                subtitle,
-                featureCards,
-                quickActions,
-                recentActivity
-        );
-
-        return homeContent;
-    }
-
-    private static HBox createFeatureCards() {
-        HBox featureCards = new HBox(20);
-        featureCards.setAlignment(Pos.CENTER);
-
-        VBox[] cards = {
-                createFeatureCard(
-                        "Track Expenses",
-                        "Monitor your daily spending",
-                        "file:image/searchHD.png",
-                        "#E3F2FD"
-                ),
-                createFeatureCard(
-                        "View Dashboard",
-                        "Analyze your financial data",
-                        "file:image/dashboard.png",
-                        "#F3E5F5"
-                ),
-                createFeatureCard(
-                        "Manage Budget",
-                        "Set and track your budgets",
-                        "file:image/HeartHD.png",
-                        "#E8F5E9"
-                )
-        };
-
-        featureCards.getChildren().addAll(cards);
-        return featureCards;
-    }
-
     private static VBox createFeatureCard(String title, String description, String iconPath, String backgroundColor) {
         VBox card = new VBox(15);
         card.setAlignment(Pos.CENTER);
         card.setPadding(new Insets(20));
         card.setStyle(
-                "-fx-background-color: " + backgroundColor + ";" +
-                        "-fx-background-radius: 15;" +
-                        "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 8, 0, 0, 4);"
+            "-fx-background-color: " + backgroundColor + ";" +
+            "-fx-background-radius: 15;" +
+            "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 8, 0, 0, 4);"
         );
-        card.setPrefWidth(250);
+        card.setPrefWidth(300);
         card.setPrefHeight(200);
 
         ImageView icon = new ImageView(new Image(iconPath));
@@ -192,16 +187,29 @@ public class HomeUI extends Application {
         icon.setFitWidth(40);
 
         Label titleLabel = new Label(title);
-        titleLabel.setFont(Font.font("Candara", FontWeight.BOLD, 18));
+        titleLabel.setFont(Font.font("Candara", FontWeight.BOLD, 20));
         titleLabel.setStyle("-fx-text-fill: black;");
 
         Label descLabel = new Label(description);
-        descLabel.setFont(Font.font("Candara", FontWeight.NORMAL, 14));
+        descLabel.setFont(Font.font("Candara", 14));
         descLabel.setStyle("-fx-text-fill: #666666;");
         descLabel.setWrapText(true);
-        descLabel.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
+        descLabel.setAlignment(Pos.CENTER);
 
         card.getChildren().addAll(icon, titleLabel, descLabel);
+
+        // Add hover effect
+        card.setOnMouseEntered(e -> card.setStyle(
+            "-fx-background-color: " + backgroundColor + ";" +
+            "-fx-background-radius: 15;" +
+            "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 12, 0, 0, 6);"
+        ));
+
+        card.setOnMouseExited(e -> card.setStyle(
+            "-fx-background-color: " + backgroundColor + ";" +
+            "-fx-background-radius: 15;" +
+            "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 8, 0, 0, 4);"
+        ));
 
         return card;
     }
@@ -460,6 +468,97 @@ public class HomeUI extends Application {
         button.setOnMouseExited(e -> button.setStyle(defaultStyle));
 
         return button;
+    }
+
+    private static VBox createTrackStatistics() {
+        VBox statsBox = new VBox(20);
+        statsBox.setStyle(
+            "-fx-background-color: white;" +
+            "-fx-background-radius: 15;" +
+            "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 8, 0, 0, 4);"
+        );
+        statsBox.setPadding(new Insets(20));
+
+        Label titleLabel = new Label("Track Statistics");
+        titleLabel.setFont(Font.font("Candara", FontWeight.BOLD, 20));
+        titleLabel.setStyle("-fx-text-fill: black;");
+
+        // Create statistics grid
+        GridPane statsGrid = new GridPane();
+        statsGrid.setHgap(20);
+        statsGrid.setVgap(15);
+        statsGrid.setPadding(new Insets(10));
+
+        // Add statistics items
+        addStatItem(statsGrid, 0, "Total Transactions", "156", "Total number of transactions this month");
+        addStatItem(statsGrid, 1, "Average Transaction", "$85.50", "Average amount per transaction");
+        addStatItem(statsGrid, 2, "Highest Category", "Groceries", "Category with highest spending");
+        addStatItem(statsGrid, 3, "Monthly Trend", "+12.5%", "Compared to last month");
+
+        // Create category distribution chart
+        VBox chartBox = new VBox(10);
+        chartBox.setPadding(new Insets(20));
+        chartBox.setStyle("-fx-background-color: #F8F9FA; -fx-background-radius: 10;");
+
+        Label chartTitle = new Label("Category Distribution");
+        chartTitle.setFont(Font.font("Candara", FontWeight.BOLD, 16));
+        chartTitle.setStyle("-fx-text-fill: black;");
+
+        // Create a simple bar chart representation using rectangles
+        HBox chartBars = new HBox(10);
+        chartBars.setAlignment(Pos.BOTTOM_CENTER);
+        chartBars.setPrefHeight(150);
+
+        // Add sample bars
+        String[] categories = {"Groceries", "Transport", "Entertainment", "Utilities", "Others"};
+        double[] percentages = {35, 25, 15, 20, 5};
+        String[] colors = {"#4CAF50", "#2196F3", "#9C27B0", "#FF9800", "#607D8B"};
+
+        for (int i = 0; i < categories.length; i++) {
+            VBox barContainer = new VBox(5);
+            barContainer.setAlignment(Pos.CENTER);
+
+            Rectangle bar = new Rectangle(40, percentages[i] * 1.5);
+            bar.setFill(Color.web(colors[i]));
+            bar.setArcWidth(5);
+            bar.setArcHeight(5);
+
+            Label categoryLabel = new Label(categories[i]);
+            categoryLabel.setFont(Font.font("Candara", 12));
+            categoryLabel.setStyle("-fx-text-fill: #666666;");
+
+            Label percentageLabel = new Label(percentages[i] + "%");
+            percentageLabel.setFont(Font.font("Candara", FontWeight.BOLD, 12));
+            percentageLabel.setStyle("-fx-text-fill: black;");
+
+            barContainer.getChildren().addAll(bar, percentageLabel, categoryLabel);
+            chartBars.getChildren().add(barContainer);
+        }
+
+        chartBox.getChildren().addAll(chartTitle, chartBars);
+
+        statsBox.getChildren().addAll(titleLabel, statsGrid, chartBox);
+        return statsBox;
+    }
+
+    private static void addStatItem(GridPane grid, int row, String label, String value, String tooltip) {
+        VBox item = new VBox(5);
+        
+        Label labelNode = new Label(label);
+        labelNode.setFont(Font.font("Candara", 14));
+        labelNode.setStyle("-fx-text-fill: #666666;");
+
+        Label valueNode = new Label(value);
+        valueNode.setFont(Font.font("Candara", FontWeight.BOLD, 18));
+        valueNode.setStyle("-fx-text-fill: black;");
+
+        item.getChildren().addAll(labelNode, valueNode);
+        
+        Tooltip tooltipNode = new Tooltip(tooltip);
+        item.setOnMouseEntered(e -> Tooltip.install(item, tooltipNode));
+        item.setOnMouseExited(e -> Tooltip.uninstall(item, tooltipNode));
+
+        grid.add(item, 0, row);
     }
 
     public static void main(String[] args) {

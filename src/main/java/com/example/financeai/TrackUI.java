@@ -17,9 +17,17 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.stage.FileChooser;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import org.jetbrains.annotations.NotNull;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 
 public class TrackUI extends Application {
 
@@ -295,70 +303,249 @@ public class TrackUI extends Application {
         );
         recentExpenses.setPadding(new Insets(20));
 
+        HBox titleBar = new HBox();
+        titleBar.setAlignment(Pos.CENTER_LEFT);
+        titleBar.setSpacing(20);
+
         Label titleLabel = new Label("Recent Expenses");
         titleLabel.setFont(Font.font("Candara", FontWeight.BOLD, 20));
         titleLabel.setStyle("-fx-text-fill: black;");
 
-        VBox expenseList = new VBox(10);
-        expenseList.getChildren().addAll(
-                createExpenseItem("Grocery Shopping", "-$85.50", "Today", "Groceries", "file:image/grocery.png"),
-                createExpenseItem("Coffee Shop", "-$4.50", "Yesterday", "Food & Drinks", "file:image/coffee.png"),
-                createExpenseItem("Electric Bill", "-$75.00", "2 days ago", "Utilities", "file:image/utility.png"),
-                createExpenseItem("Movie Tickets", "-$30.00", "3 days ago", "Entertainment", "file:image/entertainment.png")
+        // Create table
+        TableView<ExpenseItem> expenseTable = new TableView<>();
+        expenseTable.setStyle("-fx-background-color: white; -fx-border-color: #DCEDC8; -fx-border-width: 1;");
+
+        // Create columns
+        TableColumn<ExpenseItem, String> dateCol = new TableColumn<>("Date");
+        dateCol.setCellValueFactory(new PropertyValueFactory<>("date"));
+        dateCol.setPrefWidth(100);
+
+        TableColumn<ExpenseItem, String> titleCol = new TableColumn<>("Description");
+        titleCol.setCellValueFactory(new PropertyValueFactory<>("title"));
+        titleCol.setPrefWidth(200);
+
+        TableColumn<ExpenseItem, String> categoryCol = new TableColumn<>("Category");
+        categoryCol.setCellValueFactory(new PropertyValueFactory<>("category"));
+        categoryCol.setPrefWidth(150);
+
+        TableColumn<ExpenseItem, String> amountCol = new TableColumn<>("Amount");
+        amountCol.setCellValueFactory(new PropertyValueFactory<>("amount"));
+        amountCol.setPrefWidth(100);
+
+        expenseTable.getColumns().addAll(dateCol, titleCol, categoryCol, amountCol);
+
+        // Add sample data
+        ObservableList<ExpenseItem> data = FXCollections.observableArrayList(
+            new ExpenseItem("Today", "Grocery Shopping", "Groceries", "-$85.50"),
+            new ExpenseItem("Yesterday", "Coffee Shop", "Food & Drinks", "-$4.50"),
+            new ExpenseItem("2 days ago", "Electric Bill", "Utilities", "-$75.00"),
+            new ExpenseItem("3 days ago", "Movie Tickets", "Entertainment", "-$30.00")
         );
+        expenseTable.setItems(data);
 
-        recentExpenses.getChildren().addAll(titleLabel, expenseList);
+        Button generateReportButton = new Button("Generate Report");
+        generateReportButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: black; -fx-font-weight: bold; -fx-padding: 8 15;");
+        generateReportButton.setOnAction(e -> showReportDialog());
 
-        return recentExpenses;
-    }
+        Button importButton = new Button("Import CSV");
+        importButton.setStyle("-fx-background-color: #2196F3; -fx-text-fill: black; -fx-font-weight: bold; -fx-padding: 8 15;");
+        importButton.setOnAction(e -> importCSVFile(expenseTable));
 
-    private static HBox createExpenseItem(String title, String amount, String date, String category, String iconPath) {
-        HBox item = new HBox();
-        item.setAlignment(Pos.CENTER_LEFT);
-        item.setPadding(new Insets(10));
-        item.setStyle("-fx-background-radius: 10;");
-
-        ImageView icon = new ImageView(new Image(iconPath));
-        icon.setFitHeight(30);
-        icon.setFitWidth(30);
-
-        VBox details = new VBox(5);
-        Label titleLabel = new Label(title);
-        titleLabel.setFont(Font.font("Candara", FontWeight.BOLD, 14));
-        titleLabel.setStyle("-fx-text-fill: black;");
-
-        Label categoryLabel = new Label(category);
-        categoryLabel.setFont(Font.font("Candara", FontWeight.NORMAL, 12));
-        categoryLabel.setStyle("-fx-text-fill: #666666;");
-
-        Label dateLabel = new Label(date);
-        dateLabel.setFont(Font.font("Candara", FontWeight.NORMAL, 12));
-        dateLabel.setStyle("-fx-text-fill: #666666;");
-
-        details.getChildren().addAll(titleLabel, categoryLabel, dateLabel);
-
-        Label amountLabel = new Label(amount);
-        amountLabel.setFont(Font.font("Candara", FontWeight.BOLD, 14));
-        amountLabel.setStyle("-fx-text-fill: #E57373;");
+        Button classificationButton = new Button("Classification");
+        classificationButton.setStyle("-fx-background-color: #9C27B0; -fx-text-fill: black; -fx-font-weight: bold; -fx-padding: 8 15;");
+        classificationButton.setOnAction(e -> toggleClassification(expenseTable));
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        item.getChildren().addAll(icon, new Region() {{
-            setMinWidth(10);
-        }}, details, spacer, amountLabel);
+        titleBar.getChildren().addAll(titleLabel, spacer, importButton, classificationButton, generateReportButton);
 
-        item.setOnMouseEntered(e -> item.setStyle(
-                "-fx-background-color: #F8F9FA;" +
-                        "-fx-background-radius: 10;"
-        ));
+        recentExpenses.getChildren().addAll(titleBar, expenseTable);
+        return recentExpenses;
+    }
 
-        item.setOnMouseExited(e -> item.setStyle(
-                "-fx-background-color: transparent;" +
-                        "-fx-background-radius: 10;"
-        ));
+    private static void showReportDialog() {
+        Stage reportStage = new Stage();
+        reportStage.setTitle("Expense Analysis Report");
 
-        return item;
+        VBox reportContent = new VBox(20);
+        reportContent.setPadding(new Insets(30));
+        reportContent.setStyle("-fx-background-color: white;");
+
+        // Title
+        Label titleLabel = new Label("Expense Analysis Report");
+        titleLabel.setFont(Font.font("Arial Black", FontWeight.BOLD, 24));
+        titleLabel.setStyle("-fx-text-fill: black;");
+
+        // Subtitle
+        Label subtitleLabel = new Label("Generated on " + LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM dd, yyyy")));
+        subtitleLabel.setFont(Font.font("Candara", FontWeight.NORMAL, 16));
+        subtitleLabel.setStyle("-fx-text-fill: #666666;");
+
+        // Summary Section
+        VBox summaryBox = createReportSection("Summary", new String[]{
+            "Total Expenses: $2,580.75",
+            "Average Daily Expense: $85.50",
+            "Highest Spending Category: Groceries",
+            "Budget Utilization: 64.5%"
+        });
+
+        // Category Analysis
+        VBox categoryBox = createReportSection("Category Analysis", new String[]{
+            "Groceries: $850.50 (32.9%)",
+            "Transportation: $450.00 (17.4%)",
+            "Entertainment: $380.00 (14.7%)",
+            "Utilities: $750.00 (29.1%)",
+            "Others: $150.25 (5.9%)"
+        });
+
+        // Trends
+        VBox trendsBox = createReportSection("Spending Trends", new String[]{
+            "Week 1: $650.25",
+            "Week 2: $720.50",
+            "Week 3: $680.00",
+            "Week 4: $530.00"
+        });
+
+        // Recommendations
+        VBox recommendationsBox = createReportSection("Recommendations", new String[]{
+            "Consider reducing entertainment expenses by 15%",
+            "Look for better deals on grocery shopping",
+            "Set up automatic bill payments to avoid late fees",
+            "Review subscription services monthly"
+        });
+
+        reportContent.getChildren().addAll(
+            titleLabel,
+            subtitleLabel,
+            summaryBox,
+            categoryBox,
+            trendsBox,
+            recommendationsBox
+        );
+
+        ScrollPane scrollPane = new ScrollPane(reportContent);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
+
+        Scene scene = new Scene(scrollPane, 800, 600);
+        reportStage.setScene(scene);
+        reportStage.show();
+    }
+
+    private static VBox createReportSection(String title, String[] items) {
+        VBox section = new VBox(10);
+        section.setStyle("-fx-background-color: #F8F9FA; -fx-background-radius: 10; -fx-padding: 15;");
+
+        Label sectionTitle = new Label(title);
+        sectionTitle.setFont(Font.font("Candara", FontWeight.BOLD, 18));
+        sectionTitle.setStyle("-fx-text-fill: black;");
+
+        VBox content = new VBox(8);
+        for (String item : items) {
+            Label itemLabel = new Label(item);
+            itemLabel.setFont(Font.font("Candara", 14));
+            itemLabel.setStyle("-fx-text-fill: #333333;");
+            content.getChildren().add(itemLabel);
+        }
+
+        section.getChildren().addAll(sectionTitle, content);
+        return section;
+    }
+
+    private static void importCSVFile(TableView<ExpenseItem> table) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Select CSV File");
+        fileChooser.getExtensionFilters().add(
+            new FileChooser.ExtensionFilter("CSV Files", "*.csv")
+        );
+
+        File file = fileChooser.showOpenDialog(null);
+        if (file != null) {
+            try {
+                ObservableList<ExpenseItem> data = FXCollections.observableArrayList();
+                BufferedReader reader = new BufferedReader(new FileReader(file));
+                String line;
+                boolean isFirstLine = true;
+                
+                while ((line = reader.readLine()) != null) {
+                    if (isFirstLine) {
+                        isFirstLine = false;
+                        continue;
+                    }
+                    String[] values = line.split(",");
+                    if (values.length >= 4) {
+                        data.add(new ExpenseItem(
+                            values[0].trim(),
+                            values[1].trim(),
+                            values[2].trim(),
+                            values[3].trim()
+                        ));
+                    }
+                }
+                reader.close();
+                table.setItems(data);
+            } catch (IOException e) {
+                showError("Error", "Failed to import CSV file: " + e.getMessage());
+            }
+        }
+    }
+
+    private static void toggleClassification(TableView<ExpenseItem> table) {
+        ObservableList<ExpenseItem> currentItems = table.getItems();
+        if (currentItems.isEmpty()) {
+            showError("Error", "No data available for classification");
+            return;
+        }
+
+        // Toggle between classified and unclassified data
+        if (currentItems.get(0).getCategory().equals("Unclassified")) {
+            // Show classified data
+            ObservableList<ExpenseItem> classifiedData = FXCollections.observableArrayList(
+                new ExpenseItem("Today", "Grocery Shopping", "Groceries", "-$85.50"),
+                new ExpenseItem("Yesterday", "Coffee Shop", "Food & Drinks", "-$4.50"),
+                new ExpenseItem("2 days ago", "Electric Bill", "Utilities", "-$75.00"),
+                new ExpenseItem("3 days ago", "Movie Tickets", "Entertainment", "-$30.00")
+            );
+            table.setItems(classifiedData);
+        } else {
+            // Show unclassified data
+            ObservableList<ExpenseItem> unclassifiedData = FXCollections.observableArrayList(
+                new ExpenseItem("Today", "Walmart Purchase", "Unclassified", "-$120.50"),
+                new ExpenseItem("Yesterday", "Amazon Order", "Unclassified", "-$45.99"),
+                new ExpenseItem("2 days ago", "Gas Station", "Unclassified", "-$35.00"),
+                new ExpenseItem("3 days ago", "Restaurant", "Unclassified", "-$65.00")
+            );
+            table.setItems(unclassifiedData);
+        }
+    }
+
+    private static void showError(String title, String content) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(content);
+        alert.showAndWait();
+    }
+
+    // Add ExpenseItem class for table data
+    public static class ExpenseItem {
+        private final SimpleStringProperty date;
+        private final SimpleStringProperty title;
+        private final SimpleStringProperty category;
+        private final SimpleStringProperty amount;
+
+        public ExpenseItem(String date, String title, String category, String amount) {
+            this.date = new SimpleStringProperty(date);
+            this.title = new SimpleStringProperty(title);
+            this.category = new SimpleStringProperty(category);
+            this.amount = new SimpleStringProperty(amount);
+        }
+
+        public String getDate() { return date.get(); }
+        public String getTitle() { return title.get(); }
+        public String getCategory() { return category.get(); }
+        public String getAmount() { return amount.get(); }
     }
 
     private static VBox createSidebar(Stage stage) {
